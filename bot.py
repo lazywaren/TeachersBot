@@ -1,44 +1,58 @@
+import asyncio
+import logging
+
 from aiogram import Bot, Dispatcher
-from aiogram.filters import Command
-from aiogram.types import Message
-from environs import Env
-from filters.isadmin import isadmin
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.redis import RedisStorage
 
-env = Env()
-env.read_env()
+from config_data.config import load_config
+from handlers.user_handlers import register_user
+from middlewares.environment import EnvironmentMiddleware
 
-bot_token = env('BOT_TOKEN')
-admin_id = env.int('ADMIN_ID')
-
-bot = Bot(token=bot_token)
-dp = Dispatcher()
-
-# Этот хэндлер будет срабатывать на команду "/start"
+logger = logging.getLogger(__name__)
 
 
-@dp.message(Command(commands=["start"]))
-async def process_start_command(message: Message):
-    await message.answer('Привет!\nМеня зовут Эхо-бот!\nНапиши мне что-нибудь')
+def register_all_middlewares(dp, config):
+    dp.setup_middleware(EnvironmentMiddleware(config=config))
 
 
-# Этот хэндлер будет срабатывать на команду "/help"
-@dp.message(Command(commands=['help']))
-async def process_help_command(message: Message):
-    await message.answer(
-        'Напиши мне что-нибудь и в ответ '
-        'я пришлю тебе твое сообщение'
+# def register_all_filters(dp):
+#     dp.filters_factory.bind(AdminFilter)
+
+
+def register_all_handlers(dp):
+    register_user(dp)
+
+
+
+async def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format=u'%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s',
     )
+    logger.info("Starting bot")
+    config = load_config(".env")
 
+    storage = RedisStorage2() if config.tg_bot.use_redis else MemoryStorage()
+    bot = Bot(token=config.tg_bot.token, parse_mode='HTML')
+    dp = Dispatcher(bot, storage=storage)
 
-# Этот хэндлер будет срабатывать на любые ваши текстовые сообщения,
-# кроме команд "/start" и "/help"
-@dp.message()
-async def send_echo(message: Message):
-    if isadmin(message):
-        await message.reply(text="Привет, админ")
-    else:
-        await message.reply(text=message.text)
+    bot['config'] = config
+
+    register_all_middlewares(dp, config)
+    register_all_handlers(dp)
+
+    # start
+    try:
+        await dp.start_polling()
+    finally:
+        await dp.storage.close()
+        await dp.storage.wait_closed()
+        await bot.session.close()
 
 
 if __name__ == '__main__':
-    dp.run_polling(bot)
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logger.error("Bot stopped!")

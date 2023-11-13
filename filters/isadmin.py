@@ -7,7 +7,7 @@ env.read_env()
 admin_id = env.int('ADMIN_ID')
 
 
-def isadmin(message: Message):
+def isadmin(message: Message) -> bool:
     if message.from_user.id == admin_id:
         return True
     else:
