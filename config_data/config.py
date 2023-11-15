@@ -4,11 +4,11 @@ from environs import Env
 
 
 @dataclass
-class DbConfig:
-    host: str
-    password: str
-    user: str
-    database: str
+class DatabaseConfig:
+    database: str         # Название базы данных
+    db_host: str          # URL-адрес базы данных
+    db_user: str          # Username пользователя базы данных
+    db_password: str      # Пароль к базе данных
 
 
 @dataclass
@@ -19,15 +19,9 @@ class TgBot:
 
 
 @dataclass
-class Miscellaneous:
-    other_params: str = None
-
-
-@dataclass
 class Config:
     tg_bot: TgBot
-    # db: DbConfig
-    # misc: Miscellaneous
+    db: DatabaseConfig
 
 
 def load_config(path: str = None):
@@ -40,11 +34,10 @@ def load_config(path: str = None):
             ADMIN_ID=env.int("ADMIN_ID"),
             use_redis=env.bool("USE_REDIS"),
         ),
-        # db=DbConfig(
-        #     host=env.str('DB_HOST'),
-        #     password=env.str('DB_PASS'),
-        #     user=env.str('DB_USER'),
-        #     database=env.str('DB_NAME')
-        # ),
-        # misc=Miscellaneous()
+        db=DatabaseConfig(
+            database=env('DATABASE'),
+            db_host=env('DB_HOST'),
+            db_user=env('DB_USER'),
+            db_password=env('DB_PASSWORD')
+        )
     )
