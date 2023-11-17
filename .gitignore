@@ -155,7 +155,7 @@ cython_debug/
 # Ds_Store remove
 .DS_Store
 
-sources
+sources/*
 !sources/__init__.py
 !sources/sources.py
 
