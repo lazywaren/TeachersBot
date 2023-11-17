@@ -155,6 +155,9 @@ cython_debug/
 # Ds_Store remove
 .DS_Store
 
+sources
+!sources/__init__.py
+!sources/sources.py
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
